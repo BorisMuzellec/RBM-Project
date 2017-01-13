@@ -11,7 +11,7 @@ import RBM
 
 rbm = RBM.RBM(num_visible = 6, num_hidden = 2)
 training_data = np.array([[1,1,1,0,0,0],[1,1,1,0,0,0],[0,0,1,1,1,0], [0,0,1,1,0,0],[0,0,1,1,1,0]])
-rbm.train(training_data)
+rbm.train(training_data, method="PCD", batchsize=3)
 
 print("RBM weights:")
 print(rbm.weights)
@@ -27,14 +27,13 @@ print("\n")
 
 print("Let's sample visible data from this distribution: ")
 hidden_data = np.array([[0,1],[1,1]])
-print(rbm.sample(hidden_data))
+print(rbm.sample_visible(hidden_data, binary=True))
 print("\n")
 
 
 print("Let's sample hidden data from this distribution: ")
 visible_data = np.array([[0,1,0,0,1,1],[0,0,0,1,1,1]])
-print(rbm.sample(visible_data, visible = False))
-
+print(rbm.sample_hidden(visible_data))
 
 
 
