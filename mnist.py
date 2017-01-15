@@ -21,12 +21,16 @@ data = data[idx]
 target = mnist.target[idx]
 
 
-rbm = RBM(num_hidden=25, num_visible=784)
+rbm = RBM(num_hidden=100, num_visible=784)
 
 print("Training")
-rbm.train(data, method="PCD", learning_rate=0.1, num_iter=10, k=1)
+rbm.train(data[:10000], method="PCD", learning_rate=0.1, num_iter=1000, k=5)
 
-res = rbm.sample_visible(rbm.sample_hidden(data[:4]))
-for r in res:
-    sb.heatmap(r.reshape((28, 28)), cmap='gray')
-    plt.show()
+sb.heatmap(rbm.weights[:, 10].reshape((28, 28)), cmap='gray')
+plt.show()
+sb.heatmap(rbm.weights[:, 50].reshape((28, 28)), cmap='gray')
+plt.show()
+sb.heatmap(rbm.weights[:, 100].reshape((28, 28)), cmap='gray')
+plt.show()
+sb.heatmap(rbm.weights[:, 250].reshape((28, 28)), cmap='gray')
+plt.show()
