@@ -7,14 +7,7 @@ Created on Tue Jan 10 20:00:30 2017
 """
 import numpy as np
 from tqdm import tqdm
-
-def sig(x):
-    """
-    Computes the sigmoid of x in a vectorized way
-    Args:
-        x (np.ndarray): array to compute the sigmoid of
-    """
-    return 1/(1+np.exp(-x))
+from utils import *
 
 
 def iterate_minibatches(inputs, batchsize, shuffle=False):
@@ -42,12 +35,11 @@ def iterate_minibatches(inputs, batchsize, shuffle=False):
 
 # NB: the input vectors should be fed as lines
 class RBM:
-
     def __init__(self, num_hidden, num_visible):
         self.num_hidden = num_hidden
         self.num_visible = num_visible
         # Break the symmetry
-        self.weights = 0.1 * np.random.randn(self.num_visible, self.num_hidden)
+        self.weights = 0.01 * np.random.randn(self.num_visible, self.num_hidden)
         self.visible_biases = np.zeros(num_visible)[np.newaxis, :]
         self.hidden_biases = np.zeros(num_hidden)[np.newaxis, :]
 
@@ -63,14 +55,14 @@ class RBM:
         Compute the probabilities that visible units are activated, given hidden units states
         """
         h_ = h[np.newaxis, :] if h.ndim == 1 else h
-        return sig(h.dot(self.weights.T) + self.visible_biases)
+        return sig(h_.dot(self.weights.T) + self.visible_biases)
 
     def sample_hidden(self, v):
         """
         Sample the hidden units state given visible units
         """
         p = self._sample_hidden_probas(v)
-        return np.random.binomial(n = 1, p = p)
+        return np.random.binomial(n=1, p=p)
 
     def sample_visible(self, h, binary=False):
         """
@@ -89,7 +81,7 @@ class RBM:
         return h, v
 
     # Performs vanilla gradient ascent of the log-likelihood, using the prescribed method (only CD-k and PCD-k supported for now)
-    def train(self, data, method="CD", learning_rate=0.1, batchsize=100, num_iter=100, k=10):
+    def train(self, data, method="CD", learning_rate=0.01, batchsize=50, num_iter=100, k=10):
         for _ in tqdm(range(num_iter)):
             for batch in iterate_minibatches(data, batchsize=batchsize, shuffle=True):
                 if method not in ["CD", "PCD"]:
@@ -126,17 +118,16 @@ class RBM:
         b_grad = v0 - v_tmp
         c_grad = self._sample_hidden_probas(v0) - self._sample_hidden_probas(v_tmp)
 
-        W_grad = W_grad / N # We just have to divise by the batch size
+        W_grad = W_grad / N  # We just have to divise by the batch size
         b_grad = b_grad.mean(axis=0)[np.newaxis, :]
         c_grad = c_grad.mean(axis=0)[np.newaxis, :]
 
         return W_grad, b_grad, c_grad
 
-
     # Sample from the trained RBM (if visible = True, sample visible, else sample hidden)
-    def sample(self, data, visible = True):
+    def sample(self, data, visible=True):
         if visible:
             return sig(self.weights.dot(data.T) + self.visible_biases[:, np.newaxis])
         else:
             p = sig(self.weights.T.dot(data.T) + self.hidden_biases[:, np.newaxis])
-            return np.random.binomial(n = 1, p = p).T
+            return np.random.binomial(n=1, p=p).T
