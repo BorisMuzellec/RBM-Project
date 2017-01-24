@@ -12,7 +12,7 @@ def sig(x):
     return 1 / (1 + np.exp(-x))
 
 
-def display_weights(weights, dimx=28, dimy=28):
+def display_weights(weights, dimx=28, dimy=28, show=True):
     m, n = weights.shape
     cols = int(np.floor(np.sqrt(n)))
     rows = int(n / cols) if n % cols == 0 else int(np.floor(n / cols)) + 1
@@ -27,4 +27,5 @@ def display_weights(weights, dimx=28, dimy=28):
                 ax[i, j].set_axis_bgcolor('white')
             else:
                 sb.heatmap(weights[:, i * cols + j].reshape((dimx, dimy)), cmap='gray', ax=ax[i, j], square=True, cbar=False, xticklabels=False, yticklabels=False)
-    plt.show()
+    if show:
+        plt.show()

@@ -81,16 +81,26 @@ class RBM:
         return h, v
 
     # Performs vanilla gradient ascent of the log-likelihood, using the prescribed method (only CD-k and PCD-k supported for now)
-    def train(self, data, method="CD", learning_rate=0.01, batchsize=50, num_iter=100, k=10):
-        for _ in tqdm(range(num_iter)):
+    def train(self, data, method="CD", learning_rate=0.01, batchsize=50, num_iter=100, k=10, errors=None, decrease_eta=False):
+        threshold = int(4 / 5 * num_iter)  # completely arbitrary choice
+        for i in tqdm(range(num_iter)):
+            if decrease_eta:
+                # Decrease the learning rate after some iterations
+                eta = learning_rate if i < threshold else learning_rate / ((1 + i - threshold) ** 2)
+            else:
+                eta = learning_rate
+
             for batch in iterate_minibatches(data, batchsize=batchsize, shuffle=True):
                 if method not in ["CD", "PCD"]:
                     raise NotImplementedError("Optimization method must be 'CD' or 'PCD'")
 
                 W_grad, b_grad, c_grad = self._compute_grad(batch, k, method)
-                self.weights += learning_rate * W_grad
-                self.visible_biases += learning_rate * b_grad
-                self.hidden_biases += learning_rate * c_grad
+                self.weights += eta * W_grad
+                self.visible_biases += eta * b_grad
+                self.hidden_biases += eta * c_grad
+
+            if errors is not None:
+                errors[i] = self.reconstr_err(data, k)
 
     # TODO: implement other training methods (Wasserstein...)
     def _compute_grad(self, batch, k, method="PCD"):
@@ -123,6 +133,10 @@ class RBM:
         c_grad = c_grad.mean(axis=0)[np.newaxis, :]
 
         return W_grad, b_grad, c_grad
+
+    def reconstr_err(self, data, k=1):
+        _, gen = self.gibbs_vhv(data, k=k)
+        return np.linalg.norm(data - gen)
 
     # Sample from the trained RBM (if visible = True, sample visible, else sample hidden)
     def sample(self, data, visible=True):

@@ -24,14 +24,27 @@ data = mnist.data / 256.0  # Rescale data
 # We keep only the digit "0"
 data = data[mnist.target == 0]
 np.random.shuffle(data)
+train_data = data[:6000, :]
+validation_data = data[6000:, :]
 
 rbm = RBM(num_hidden=100, num_visible=784)
-# display_weights(rbm.weights)
+n_iter = 50
+k = 5
 
 print("Training")
-rbm.train(data, method="PCD", learning_rate=0.1, num_iter=100, k=5)
+errors = np.zeros(n_iter)
+rbm.train(train_data, method="PCD", learning_rate=0.1, num_iter=n_iter, k=k, errors=errors, decrease_eta=True)
 
-display_weights(rbm.weights)
-_, samp = rbm.gibbs_vhv(data[0, :], k=5)
+# Plot the reconstruction error on the training set
+plt.figure()
+plt.plot(errors)
+
+# Plot the weights of the RBM (one figure per hidden unit)
+display_weights(rbm.weights, show=False)
+
+# Plot one sample of visible units (based on hidden units computed from a real sample)
+plt.figure()
+_, samp = rbm.gibbs_vhv(validation_data[0, :], k=5)
 sb.heatmap(samp.reshape((28, 28)), cmap='gray')
+
 plt.show()
