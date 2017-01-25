@@ -39,9 +39,9 @@ class RBM:
         self.num_hidden = num_hidden
         self.num_visible = num_visible
         # Break the symmetry
-        self.weights = 0.01 * np.random.randn(self.num_visible, self.num_hidden)
-        self.visible_biases = np.zeros(num_visible)[np.newaxis, :]
-        self.hidden_biases = np.zeros(num_hidden)[np.newaxis, :]
+        self.weights = 0.05 * np.random.randn(self.num_visible, self.num_hidden)
+        self.visible_biases = 0.01 * np.random.randn(self.num_visible)[np.newaxis, :]
+        self.hidden_biases = 0.01 * np.random.randn(num_hidden)[np.newaxis, :]
 
     def _sample_hidden_probas(self, v):
         """
@@ -70,19 +70,20 @@ class RBM:
         """
         return np.random.binomial(n=1, p=self._sample_visible_probas(h)) if binary else self._sample_visible_probas(h)
 
-    def gibbs_vhv(self, v0, k=1):
+    def gibbs_vhv(self, v0, k=1, binary = True):
         """
         Perform k Gibbs sampling steps, starting from the visible units state v0
         """
         v = v0
         for t in range(k):
             h = self.sample_hidden(v)
-            v = self.sample_visible(h)
+            v = self.sample_visible(h, binary = True)
+        if not binary:
+              v = self.sample_visible(h, binary)
         return h, v
 
-    # Performs vanilla gradient ascent of the log-likelihood, using the prescribed method (only CD-k and PCD-k supported for now)
-    # TODO: add weight decay
-    def train(self, data, method="CD", learning_rate=0.01, batchsize=50, num_iter=100, k=10, errors=None, decrease_eta=False):
+    # Performs vanilla gradient ascent of the log-likelihood, using the prescribed method
+    def train(self, data, method="CD", learning_rate=0.01, weight_decay = 0.1,  batchsize=50, num_iter=100, k=10, errors=None, decrease_eta=False):
         threshold = int(4 / 5 * num_iter)  # completely arbitrary choice
         N = data.shape[0]
         for i in tqdm(range(num_iter)):
@@ -97,9 +98,9 @@ class RBM:
                     raise NotImplementedError("Optimization method must be 'CD' or 'PCD'")
 
                 W_grad, b_grad, c_grad = self._compute_grad(batch, k, method)
-                self.weights += eta * W_grad
-                self.visible_biases += eta * b_grad
-                self.hidden_biases += eta * c_grad
+                self.weights = (1-weight_decay)*self.weights +  eta * W_grad
+                self.visible_biases = (1-weight_decay)*self.visible_biases + eta * b_grad
+                self.hidden_biases = (1-weight_decay)*self.hidden_biases + eta * c_grad
 
             if errors is not None:
                 errors[i] = self.reconstr_err(data, k)
@@ -110,14 +111,15 @@ class RBM:
 
         if method == "CD":
             # Compute a Gibbs chains initialized with each sample in the batch
-            v0 = batch
+            v0 = np.random.binomial(n=1, p=batch)
             _, v_tmp = self.gibbs_vhv(v0, k)
         elif method == "PCD":
             # We keep the visible states persistent between batches
             # If it is the first batch, we initilize the variable
             if not hasattr(self, 'persistent_visible_'):
-                self.persistent_visible_ = batch
-
+                #self.persistent_visible_ = batch
+                self.persistent_visible_ = np.random.binomial(n=1, p=batch)
+                
             # Gibbs sampling from persistant state
             v0 = self.persistent_visible_
             _, v_tmp = self.gibbs_vhv(self.persistent_visible_, k)
