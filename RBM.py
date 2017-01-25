@@ -81,8 +81,10 @@ class RBM:
         return h, v
 
     # Performs vanilla gradient ascent of the log-likelihood, using the prescribed method (only CD-k and PCD-k supported for now)
+    # TODO: add weight decay
     def train(self, data, method="CD", learning_rate=0.01, batchsize=50, num_iter=100, k=10, errors=None, decrease_eta=False):
         threshold = int(4 / 5 * num_iter)  # completely arbitrary choice
+        N = data.shape[0]
         for i in tqdm(range(num_iter)):
             if decrease_eta:
                 # Decrease the learning rate after some iterations
@@ -90,7 +92,7 @@ class RBM:
             else:
                 eta = learning_rate
 
-            for batch in iterate_minibatches(data, batchsize=batchsize, shuffle=True):
+            for batch in (iterate_minibatches(data, batchsize=batchsize, shuffle=True) if batchsize < N else [data]):
                 if method not in ["CD", "PCD"]:
                     raise NotImplementedError("Optimization method must be 'CD' or 'PCD'")
 
@@ -114,8 +116,7 @@ class RBM:
             # We keep the visible states persistent between batches
             # If it is the first batch, we initilize the variable
             if not hasattr(self, 'persistent_visible_'):
-                initial_hidden = np.zeros((N, self.num_hidden))
-                self.persistent_visible_ = self.sample_visible(initial_hidden)
+                self.persistent_visible_ = batch
 
             # Gibbs sampling from persistant state
             v0 = self.persistent_visible_
