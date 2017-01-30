@@ -12,6 +12,11 @@ def sig(x):
     return 1 / (1 + np.exp(-x))
 
 
+def softmax(x):
+    exp = np.exp(x)
+    return exp / np.sum(exp, axis=1)
+
+
 def display_weights(weights, dimx=28, dimy=28, show=True):
     m, n = weights.shape
     cols = int(np.floor(np.sqrt(n)))
@@ -29,3 +34,26 @@ def display_weights(weights, dimx=28, dimy=28, show=True):
                 sb.heatmap(weights[:, i * cols + j].reshape((dimx, dimy)), cmap='gray', ax=ax[i, j], square=True, cbar=False, xticklabels=False, yticklabels=False)
     if show:
         plt.show()
+
+
+def iterate_minibatches(inputs, batchsize, shuffle=False):
+    """Produces an batch iterator over the input.
+    Usage:
+        >>> for batch in iterate_minibatches(inputs, batchsize, shuffle):
+        >>>    # do stuff
+    Args:
+        inputs (array-like): the input iterable over which iterate
+        batchsize (int): the size of each batch (must be less than the number of inputs)
+        shuffle (bool): if True, ``inputs`` is shuffled before iteration
+    """
+    N = inputs.shape[0]
+    assert(N > batchsize)
+    if shuffle:
+        indices = np.arange(N)
+        np.random.shuffle(indices)
+    for start_idx in range(0, N - batchsize + 1, batchsize):
+        if shuffle:
+            excerpt = indices[start_idx:start_idx + batchsize]
+        else:
+            excerpt = slice(start_idx, start_idx + batchsize)
+        yield inputs[excerpt]

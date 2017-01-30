@@ -7,11 +7,37 @@ Created on Thu Jan 12 10:56:27 2017
 """
 
 import numpy as np
-import RBM
+# import RBM
+import CFRBM
 
-rbm = RBM.RBM(num_visible = 6, num_hidden = 2)
-training_data = np.array([[1,1,1,0,0,0],[1,1,1,0,0,0],[0,0,1,1,1,0], [0,0,1,1,0,0],[0,0,1,1,1,0]])
-rbm.train(training_data, method="PCD", batchsize=3)
+# rbm = RBM.RBM(num_visible = 6, num_hidden = 2)
+# training_data = np.array([[1,1,1,0,0,0],[1,1,1,0,0,0],[0,0,1,1,1,0], [0,0,1,1,0,0],[0,0,1,1,1,0]])
+# rbm.train(training_data, method="PCD", batchsize=3)
+
+# print("RBM weights:")
+# print(rbm.weights)
+# print("\n")
+
+# print("Hidden layer biases:")
+# print(rbm.hidden_biases)
+# print("\n")
+
+# print("Visible layer biases:")
+# print(rbm.visible_biases)
+# print("\n")
+
+# print("Let's sample visible data from this distribution: ")
+# hidden_data = np.array([[0,1],[1,1]])
+# print(rbm.sample_visible(hidden_data, binary=True))
+# print("\n")
+
+
+# print("Let's sample hidden data from this distribution: ")
+# visible_data = np.array([[0,1,0,0,1,1],[0,0,0,1,1,1]])
+# print(rbm.sample_hidden(visible_data))
+
+rbm = CFRBM.CFRBM(num_hidden=2, num_visible=6, num_rates=3)
+training_data = np.random.binomial(n=1, p=0.3, size=(10, 3, 6))  # 10 samples of size 3 * 6
 
 print("RBM weights:")
 print(rbm.weights)
@@ -25,15 +51,4 @@ print("Visible layer biases:")
 print(rbm.visible_biases)
 print("\n")
 
-print("Let's sample visible data from this distribution: ")
-hidden_data = np.array([[0,1],[1,1]])
-print(rbm.sample_visible(hidden_data, binary=True))
-print("\n")
-
-
-print("Let's sample hidden data from this distribution: ")
-visible_data = np.array([[0,1,0,0,1,1],[0,0,0,1,1,1]])
-print(rbm.sample_hidden(visible_data))
-
-
-
+print(rbm._sample_hidden_probas(training_data))
