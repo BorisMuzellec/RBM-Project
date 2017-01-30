@@ -5,6 +5,7 @@ from utils import *
 
 
 
+
       
 class CFRBM:
     """
@@ -82,5 +83,54 @@ class CFRBM:
         return h, v
        
 
-    def train(self):
-        pass
+    # Performs vanilla gradient ascent of the log-likelihood, using the prescribed method
+    def train(self, data, method="CD", learning_rate=0.01, weight_decay=0.01, num_iter=100, k=10,  decrease_eta=False):
+        threshold = int(4 / 5 * num_iter)  # completely arbitrary choice
+        N = data.shape[0]
+        np.random.shuffle(data)
+        for i in tqdm(range(num_iter)):
+            if decrease_eta:
+                # Decrease the learning rate after some iterations
+                eta = learning_rate if i < threshold else learning_rate / ((1 + i - threshold) ** 2)
+            else:
+                eta = learning_rate
+
+            for j in range(N):
+                if method not in ["CD", "PCD"]:
+                    raise NotImplementedError("Optimization method must be 'CD' or 'PCD'")
+
+                W_grad, b_grad, c_grad = self._compute_grad(data[j], k, method)
+                for k in range(self.num_rates):
+                      self.weights[k] = (1 - weight_decay) * self.weights[k] + eta * W_grad[k]
+                      self.visible_biases[k] = (1 - weight_decay) * self.visible_biases[k] + eta * b_grad[k]
+                self.hidden_biases = (1 - weight_decay) * self.hidden_biases + eta * c_grad
+
+                self.persistent_visible_ = None  # reset for each batch!
+
+                
+    def _compute_grad(self, v0, k, method="PCD"):
+        if method == "CD":
+            # Compute a Gibbs chains initialized with each sample in the batch
+            _, v_tmp = self.gibbs_vhv(v0, k)
+        elif method == "PCD":
+            # We keep the visible states persistent between batches
+            # If it is the first batch, we initilize the variable
+            if self.persistent_visible_ is None:
+                self.persistent_visible_ = v0
+
+            # Gibbs sampling from persistant state
+            v0 = self.persistent_visible_
+            _, v_tmp = self.gibbs_vhv(self.persistent_visible_, k)
+            # We keep this value for next batch
+            self.persistent_visible_ = v_tmp
+
+        # Compute the gradients for each chain (trick for W_grad, we already compute the sum of the gradients, see below)
+        W_grad = {}
+        b_grad = {}
+        for k in range(self.num_rates):
+              W_grad[k] = (self._sample_hidden_probas(v0).T.dot(v0[:,k][np.newaxis,:]) - self._sample_hidden_probas(v_tmp).T.dot(v_tmp[:,k][np.newaxis,:])).T
+              b_grad[k] = v0[:,k] - v_tmp[:,k]
+        c_grad = self._sample_hidden_probas(v0) - self._sample_hidden_probas(v_tmp)
+        # print(np.linalg.norm(W_grad - W_grad[:, 0][:, np.newaxis]))
+
+        return W_grad, b_grad, c_grad
