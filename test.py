@@ -37,7 +37,7 @@ import CFRBM
 # print(rbm.sample_hidden(visible_data))
 
 rbm = CFRBM.CFRBM(num_hidden=2, num_visible=6, num_rates=3)
-training_data = np.random.binomial(n=1, p=0.3, size=(10, 3, 6))  # 10 samples of size 3 * 6
+training_data = np.random.binomial(n=1, p=0.3, size=(10, 6, 3))  # 10 samples of size 6 * 3
 
 print("RBM weights:")
 print(rbm.weights)
@@ -51,4 +51,14 @@ print("Visible layer biases:")
 print(rbm.visible_biases)
 print("\n")
 
-print(rbm._sample_hidden_probas(training_data))
+print(rbm._sample_hidden_probas(training_data[2,:,:]))
+
+h = rbm.sample_hidden(training_data[2,:,:])
+
+print(rbm._sample_visible_probas(h))
+
+print(rbm.sample_visible(h, binary = True))
+
+_, samp = rbm.gibbs_vhv(training_data[2,:,:], k=3, binary = True)
+
+print(samp)
