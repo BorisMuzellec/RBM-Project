@@ -38,7 +38,7 @@ _, samp = rbm.gibbs_vhv(training_data[2,:,:], k=3, binary = True)
 
 print(samp)
 
-rbm.train(training_data, method="PCD", learning_rate=0.1, num_iter=3, k=3, decrease_eta=False)
+rbm.train(training_data, mask = np.ones((10,6)), method="PCD", learning_rate=0.1, num_iter=3, k=3, decrease_eta=False)
 
 _, samp = rbm.gibbs_vhv(training_data[2,:,:], k=3, binary = True)
 

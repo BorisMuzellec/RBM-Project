@@ -84,7 +84,9 @@ class CFRBM:
        
 
     # Performs vanilla gradient ascent of the log-likelihood, using the prescribed method
-    def train(self, data, method="CD", learning_rate=0.01, weight_decay=0.01, num_iter=100, k=10,  decrease_eta=False):
+    # Mask is a #user x m size matrix with 1 if the movie j was rated by user i, else 0
+    # Assumes that films for which no rating was given are encoded as vectors full of zeroes
+    def train(self, data, mask, method="CD", learning_rate=0.01, weight_decay=0.01, num_iter=100, k=10,  decrease_eta=False):
         threshold = int(4 / 5 * num_iter)  # completely arbitrary choice
         N = data.shape[0]
         np.random.shuffle(data)
@@ -99,16 +101,16 @@ class CFRBM:
                 if method not in ["CD", "PCD"]:
                     raise NotImplementedError("Optimization method must be 'CD' or 'PCD'")
 
-                W_grad, b_grad, c_grad = self._compute_grad(data[j], k, method)
+                W_grad, b_grad, c_grad = self._compute_grad(data[j], mask[j], k, method)
                 for k in range(self.num_rates):
-                      self.weights[k] = (1 - weight_decay) * self.weights[k] + eta * W_grad[k]
-                      self.visible_biases[k] = (1 - weight_decay) * self.visible_biases[k] + eta * b_grad[k]
+                      self.weights[k] = np.multiply(self.weights[k], (1 - weight_decay) * mask[j][:,np.newaxis]) + eta * W_grad[k]
+                      self.visible_biases[k] = np.multiply(self.visible_biases[k], (1 - weight_decay) * mask[j]) + eta * b_grad[k]
                 self.hidden_biases = (1 - weight_decay) * self.hidden_biases + eta * c_grad
 
                 self.persistent_visible_ = None  # reset for each batch!
 
                 
-    def _compute_grad(self, v0, k, method="PCD"):
+    def _compute_grad(self, v0, mask, k, method="PCD"):
         if method == "CD":
             # Compute a Gibbs chains initialized with each sample in the batch
             _, v_tmp = self.gibbs_vhv(v0, k)
@@ -128,8 +130,8 @@ class CFRBM:
         W_grad = {}
         b_grad = {}
         for k in range(self.num_rates):
-              W_grad[k] = (self._sample_hidden_probas(v0).T.dot(v0[:,k][np.newaxis,:]) - self._sample_hidden_probas(v_tmp).T.dot(v_tmp[:,k][np.newaxis,:])).T
-              b_grad[k] = v0[:,k] - v_tmp[:,k]
+              W_grad[k] = np.multiply((self._sample_hidden_probas(v0).T.dot(v0[:,k][np.newaxis,:]) - self._sample_hidden_probas(v_tmp).T.dot(v_tmp[:,k][np.newaxis,:])).T, mask[:, np.newaxis])
+              b_grad[k] = np.multiply(v0[:,k] - v_tmp[:,k], mask)
         c_grad = self._sample_hidden_probas(v0) - self._sample_hidden_probas(v_tmp)
         # print(np.linalg.norm(W_grad - W_grad[:, 0][:, np.newaxis]))
 
