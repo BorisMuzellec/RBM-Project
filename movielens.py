@@ -41,6 +41,8 @@ def load_data(path = "data/"):
       
       
 def train_test_split(data, mask, rated, test_pct = 0.2):
+      """
+      """
       num_ratings = len(rated)
       num_test = int(num_ratings * test_pct)
       
@@ -52,10 +54,9 @@ def train_test_split(data, mask, rated, test_pct = 0.2):
       test_data = pd.DataFrame.from_records(test_set, columns = ['userId', 'movieId'])      
       test_data['rating'] = pd.Series(np.zeros(num_test), index = test_data.index)
       
-      for (i,j) in test_set:
+      for (i,j) in tqdm(test_set):
             test_data[(test_data.userId == i) & (test_data.movieId == j)].rating  = data[i,j,:].argmax()
             train_mask[i,j] = 0
-      
-      train_data = train_data[(train_data.userId, train_data.movieId) not in test_set]
+            train_data[i,j] = np.zeros(6)
                                    
       return train_data, train_mask, test_data
