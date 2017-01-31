@@ -136,3 +136,14 @@ class CFRBM:
         # print(np.linalg.norm(W_grad - W_grad[:, 0][:, np.newaxis]))
 
         return W_grad, b_grad, c_grad
+        
+        
+    def predict_rating(self, v, q):
+          """
+          Given preferences v, predict rating for movie q
+          """
+          p_h = self._sample_hidden_probas(v)
+          p_v = self._sample_visible_probas(p_h)
+          
+          return p_v[q,:].dot(np.arange(self.num_rates))
+          
