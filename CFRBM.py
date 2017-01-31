@@ -5,6 +5,12 @@ from utils import *
 
 
 
+def mse(ratings, preds):
+      """
+      Mean square error between predicted and actual ratings
+      """
+      return np.mean((ratings - preds)**2)
+      
 
       
 class CFRBM:
@@ -97,7 +103,7 @@ class CFRBM:
             else:
                 eta = learning_rate
 
-            for j in range(N):
+            for j in tqdm(range(N)):
                 if method not in ["CD", "PCD"]:
                     raise NotImplementedError("Optimization method must be 'CD' or 'PCD'")
 
